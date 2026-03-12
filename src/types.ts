@@ -4,4 +4,14 @@ export interface Document {
   dateAdded: string;
   tags: string[];
   thumbnailUrl: string;
+  fileType: "pdf" | "docx" | "xlsx" | "jpg" | "png" | "txt";
 }
+
+export interface Binder {
+  id: string;
+  name: string;
+  color: string;
+  filterTags: string[];
+}
+
+export type ViewType = "documents" | "binders" | "binder-detail";
