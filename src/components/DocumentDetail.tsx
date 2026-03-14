@@ -1,5 +1,6 @@
 import { Document } from "../types";
 import { getTagColor } from "../utils/tagColors";
+import { thumbnailSrc } from "../utils/assetUrl";
 
 const fileTypeConfig: Record<string, { label: string; bg: string; text: string }> = {
   pdf:  { label: "PDF",  bg: "#fee2e2", text: "#dc2626" },
@@ -51,7 +52,7 @@ export function DocumentDetail({ document, onTagClick, onClose }: DocumentDetail
         {/* Thumbnail */}
         <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700">
           <img
-            src={document.thumbnailUrl}
+            src={thumbnailSrc(document.thumbnailPath)}
             alt={document.title}
             className="w-full h-full object-cover"
           />

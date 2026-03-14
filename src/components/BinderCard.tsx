@@ -1,5 +1,5 @@
 import { Binder, Document } from "../types";
-import { getBinderDocuments } from "../data/mockDocuments";
+import { getBinderDocuments } from "../utils/binderUtils";
 import { getTagColor } from "../utils/tagColors";
 
 interface BinderCardProps {

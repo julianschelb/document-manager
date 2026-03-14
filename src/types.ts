@@ -3,9 +3,12 @@ export interface Document {
   title: string;
   dateAdded: string;
   tags: string[];
-  thumbnailUrl: string;
-  fileType: "pdf" | "docx" | "xlsx" | "jpg" | "png" | "txt";
+  thumbnailPath: string;
+  fileType: "pdf" | "docx" | "xlsx" | "jpg" | "jpeg" | "png" | "gif" | "txt" | "bin";
   fileSizeKb: number;
+  filePath: string;
+  originalFileName: string;
+  fileHash?: string;
 }
 
 export interface Binder {
@@ -13,6 +16,19 @@ export interface Binder {
   name: string;
   color: string;
   filterTags: string[];
+}
+
+export interface AppState {
+  documents: Document[];
+  binders: Binder[];
+}
+
+export type SortField = "dateAdded" | "title" | "fileSizeKb" | "fileType";
+export type SortDirection = "asc" | "desc";
+
+export interface SortConfig {
+  field: SortField;
+  direction: SortDirection;
 }
 
 export type ViewType = "documents" | "binders" | "binder-detail";
