@@ -374,6 +374,14 @@ function App() {
         <PreviewPane
           document={selectedDocument}
           onTagClick={handleTagClick}
+          onUpdateTags={async (docId, tags) => {
+            const target = documents.find((d) => d.id === docId);
+            if (!target) return;
+            await updateDoc(docId, { title: target.title, tags });
+            setSelectedDocument((prev) =>
+              prev?.id === docId ? { ...prev, tags } : prev
+            );
+          }}
           onClose={() => setSelectedDocument(null)}
           onOpen={(doc) => openDoc(doc.filePath)}
           onEdit={(doc) => setEditingDoc(doc)}
