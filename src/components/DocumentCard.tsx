@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { Document } from "../types";
 import { getTagColor } from "../utils/tagColors";
 import { thumbnailSrc } from "../utils/assetUrl";
@@ -19,29 +20,47 @@ interface DocumentCardProps {
   onSelect: () => void;
   onMultiSelect: () => void;
   onTagClick: (tag: string) => void;
+  onOpen: () => void;
+  onDelete: () => void;
 }
 
 export function DocumentCard({
-  document,
+  document: doc,
   isSelected,
   isMultiSelected,
   onSelect,
   onMultiSelect,
   onTagClick,
+  onOpen,
+  onDelete,
 }: DocumentCardProps) {
-  const formattedDate = new Date(document.dateAdded).toLocaleDateString("en-US", {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => window.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
+  const formattedDate = new Date(doc.dateAdded).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 
   const formattedSize =
-    document.fileSizeKb >= 1000
-      ? `${(document.fileSizeKb / 1024).toFixed(1)} MB`
-      : `${document.fileSizeKb} KB`;
+    doc.fileSizeKb >= 1000
+      ? `${(doc.fileSizeKb / 1024).toFixed(1)} MB`
+      : `${doc.fileSizeKb} KB`;
 
-  const fileType = fileTypeConfig[document.fileType] ?? fileTypeConfig.txt;
-  const thumbUrl = thumbnailSrc(document.thumbnailPath);
+  const fileType = fileTypeConfig[doc.fileType] ?? fileTypeConfig.txt;
+  const thumbUrl = thumbnailSrc(doc.thumbnailPath);
 
   function handleClick(e: React.MouseEvent) {
     if (e.metaKey || e.ctrlKey) {
@@ -54,7 +73,7 @@ export function DocumentCard({
 
   return (
     <div
-      className={`relative aspect-[210/297] flex flex-col bg-white dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:scale-[1.03] ${
+      className={`group relative aspect-[210/297] flex flex-col bg-white dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:scale-[1.03] ${
         isSelected || isMultiSelected ? "ring-2 ring-blue-500 ring-offset-1" : ""
       }`}
       style={{
@@ -74,12 +93,57 @@ export function DocumentCard({
         </div>
       )}
 
+      {/* Three-dot menu */}
+      <div
+        ref={menuRef}
+        className="absolute top-2 right-2 z-20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className={`w-6 h-6 bg-white/90 dark:bg-gray-800/90 rounded-full flex items-center justify-center shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-700 transition-all ${
+            menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+          title="More actions"
+        >
+          <svg className="w-3 h-3 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="5" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <circle cx="12" cy="19" r="1.5" />
+          </svg>
+        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1">
+            <button
+              onClick={() => { onOpen(); setMenuOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Open
+            </button>
+            <div className="border-t border-gray-100 dark:border-gray-700 mx-2 my-0.5" />
+            <button
+              onClick={() => { onDelete(); setMenuOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Thumbnail */}
       <div className="flex-1 bg-gray-50 dark:bg-gray-700 overflow-hidden">
         {thumbUrl ? (
           <img
             src={thumbUrl}
-            alt={document.title}
+            alt={doc.title}
             className="w-full h-full object-cover object-top"
           />
         ) : (
@@ -98,7 +162,7 @@ export function DocumentCard({
       <div className="shrink-0 px-3 pt-2.5 pb-3 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-start gap-1.5 mb-1">
           <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-100 line-clamp-2 flex-1 leading-snug">
-            {document.title}
+            {doc.title}
           </h3>
           <span
             className="shrink-0 px-1 py-0.5 text-[9px] font-bold rounded mt-0.5"
@@ -111,7 +175,7 @@ export function DocumentCard({
           {formattedDate} · {formattedSize}
         </p>
         <div className="flex flex-wrap gap-1">
-          {document.tags.map((tag) => {
+          {doc.tags.map((tag) => {
             const color = getTagColor(tag);
             return (
               <button

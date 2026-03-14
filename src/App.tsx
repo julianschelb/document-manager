@@ -336,6 +336,8 @@ function App() {
                     onSelect={() => handleDocumentSelect(doc)}
                     onMultiSelect={() => handleMultiSelect(doc.id)}
                     onTagClick={handleTagClick}
+                    onOpen={() => openDoc(doc.filePath)}
+                    onDelete={() => setConfirmDelete({ type: "document", id: doc.id, title: doc.title })}
                   />
                 ))}
               </div>
