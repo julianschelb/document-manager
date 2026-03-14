@@ -16,6 +16,7 @@ export const mockDocuments: Document[] = [
     tags: ["bills", "utilities", "electricity"],
     thumbnailUrl: "/sample-docs/electricity-bill-jan-2024-thumb.jpg",
     fileType: "pdf",
+    fileSizeKb: 245,
   },
   {
     id: "r2",
@@ -24,6 +25,7 @@ export const mockDocuments: Document[] = [
     tags: ["finance", "bank"],
     thumbnailUrl: "/sample-docs/bank-statement-q1-2024-thumb.jpg",
     fileType: "pdf",
+    fileSizeKb: 387,
   },
   {
     id: "r3",
@@ -32,6 +34,7 @@ export const mockDocuments: Document[] = [
     tags: ["insurance", "health", "important"],
     thumbnailUrl: "/sample-docs/health-insurance-policy-thumb.jpg",
     fileType: "pdf",
+    fileSizeKb: 1240,
   },
   {
     id: "r4",
@@ -40,6 +43,7 @@ export const mockDocuments: Document[] = [
     tags: ["finance", "work", "payslip"],
     thumbnailUrl: "/sample-docs/payslip-march-2024-thumb.jpg",
     fileType: "pdf",
+    fileSizeKb: 198,
   },
   {
     id: "1",
@@ -48,6 +52,7 @@ export const mockDocuments: Document[] = [
     tags: ["bills", "utilities", "electricity"],
     thumbnailUrl: placeholderThumb(0),
     fileType: "pdf",
+    fileSizeKb: 245,
   },
   {
     id: "2",
@@ -56,6 +61,7 @@ export const mockDocuments: Document[] = [
     tags: ["insurance", "health", "important"],
     thumbnailUrl: placeholderThumb(1),
     fileType: "pdf",
+    fileSizeKb: 1240,
   },
   {
     id: "3",
@@ -64,6 +70,7 @@ export const mockDocuments: Document[] = [
     tags: ["taxes", "finance", "important"],
     thumbnailUrl: placeholderThumb(2),
     fileType: "xlsx",
+    fileSizeKb: 890,
   },
   {
     id: "4",
@@ -72,6 +79,7 @@ export const mockDocuments: Document[] = [
     tags: ["housing", "contracts", "important"],
     thumbnailUrl: placeholderThumb(3),
     fileType: "docx",
+    fileSizeKb: 2100,
   },
   {
     id: "5",
@@ -80,6 +88,7 @@ export const mockDocuments: Document[] = [
     tags: ["insurance", "car", "important"],
     thumbnailUrl: placeholderThumb(4),
     fileType: "jpg",
+    fileSizeKb: 3400,
   },
   {
     id: "6",
@@ -88,6 +97,7 @@ export const mockDocuments: Document[] = [
     tags: ["bills", "utilities", "phone"],
     thumbnailUrl: placeholderThumb(5),
     fileType: "pdf",
+    fileSizeKb: 156,
   },
   {
     id: "7",
@@ -96,6 +106,7 @@ export const mockDocuments: Document[] = [
     tags: ["finance", "bank"],
     thumbnailUrl: placeholderThumb(0),
     fileType: "pdf",
+    fileSizeKb: 387,
   },
   {
     id: "8",
@@ -104,6 +115,7 @@ export const mockDocuments: Document[] = [
     tags: ["health", "medical"],
     thumbnailUrl: placeholderThumb(1),
     fileType: "jpg",
+    fileSizeKb: 4200,
   },
   {
     id: "9",
@@ -112,6 +124,7 @@ export const mockDocuments: Document[] = [
     tags: ["contracts", "utilities", "internet"],
     thumbnailUrl: placeholderThumb(2),
     fileType: "docx",
+    fileSizeKb: 1800,
   },
   {
     id: "10",
@@ -120,6 +133,7 @@ export const mockDocuments: Document[] = [
     tags: ["finance", "work", "payslip"],
     thumbnailUrl: placeholderThumb(3),
     fileType: "pdf",
+    fileSizeKb: 198,
   },
 ];
 

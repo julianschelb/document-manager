@@ -21,7 +21,7 @@ function NotebookCover({
 }) {
   return (
     <button
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer text-left ${
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer text-left group ${
         isSelected
           ? "bg-white dark:bg-gray-700 shadow-sm"
           : "hover:bg-white/60 dark:hover:bg-gray-700/60"
@@ -30,8 +30,8 @@ function NotebookCover({
     >
       {/* Mini notebook cover */}
       <div
-        className={`relative shrink-0 rounded-md overflow-hidden shadow-md transition-transform duration-200 ${
-          isSelected ? "scale-105" : ""
+        className={`relative shrink-0 rounded-md overflow-hidden shadow-md transition-all duration-200 ${
+          isSelected ? "scale-105 shadow-lg" : "group-hover:scale-105 group-hover:shadow-lg"
         }`}
         style={{
           width: 44,

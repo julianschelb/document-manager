@@ -66,12 +66,15 @@ function App() {
     setSelectedTags([]);
   };
 
-  const totalDocs = selectedBinder
-    ? getBinderDocuments(selectedBinder, mockDocuments).length
-    : mockDocuments.length;
+  const filteredTotalKb = filteredDocuments.reduce((sum, doc) => sum + doc.fileSizeKb, 0);
+  const filteredTotalSize = filteredTotalKb >= 1024
+    ? `${(filteredTotalKb / 1024).toFixed(1)} MB`
+    : `${filteredTotalKb} KB`;
+
+  const isFiltered = searchQuery !== "" || selectedTags.length > 0;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-[10px] overflow-hidden">
       {/* Top Navbar with integrated search */}
       <Navbar
         selectedBinder={selectedBinder}
@@ -107,7 +110,7 @@ function App() {
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           <main className="flex-1 p-6">
             {filteredDocuments.length > 0 ? (
-              <div key={selectedBinder?.id ?? "all"} className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-5 animate-grid-fadein">
+              <div key={selectedBinder?.id ?? "all"} className="grid grid-cols-[repeat(auto-fill,180px)] gap-5 animate-grid-fadein">
                 {filteredDocuments.map((doc) => (
                   <DocumentCard
                     key={doc.id}
@@ -141,10 +144,49 @@ function App() {
       </div>
 
       {/* Bottom Status Bar */}
-      <footer className="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-2 text-center">
-        <p className="text-xs text-gray-500">
-          {filteredDocuments.length} of {totalDocs} documents
-        </p>
+      <footer className="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-1.5 flex items-center justify-between gap-4 text-[11px] text-gray-400">
+        {/* Left: context */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          {selectedBinder ? (
+            <>
+              <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: selectedBinder.color }} />
+              <span className="text-gray-600 dark:text-gray-300 font-medium truncate">{selectedBinder.name}</span>
+            </>
+          ) : (
+            <span className="text-gray-500">All Documents</span>
+          )}
+        </div>
+
+        {/* Center: count + size */}
+        <div className="flex items-center gap-1 shrink-0">
+          <span>{filteredDocuments.length}</span>
+          <span>{filteredDocuments.length === 1 ? "document" : "documents"}</span>
+          <span className="text-gray-300 dark:text-gray-600 mx-0.5">·</span>
+          <span>{filteredTotalSize}</span>
+          {isFiltered && (
+            <>
+              <span className="text-gray-300 dark:text-gray-600 mx-0.5">·</span>
+              <span className="text-amber-500">filtered</span>
+            </>
+          )}
+        </div>
+
+        {/* Right: selected doc or active filters */}
+        <div className="flex items-center gap-1.5 min-w-0 justify-end">
+          {selectedDocument ? (
+            <>
+              <span className="truncate max-w-[160px] text-gray-600 dark:text-gray-300">{selectedDocument.title}</span>
+              <span className="text-gray-300 dark:text-gray-600">·</span>
+              <span className="uppercase">{selectedDocument.fileType}</span>
+              <span className="text-gray-300 dark:text-gray-600">·</span>
+              <span>{selectedDocument.fileSizeKb >= 1024 ? `${(selectedDocument.fileSizeKb / 1024).toFixed(1)} MB` : `${selectedDocument.fileSizeKb} KB`}</span>
+            </>
+          ) : selectedTags.length > 0 ? (
+            <span className="text-amber-500">{selectedTags.length} {selectedTags.length === 1 ? "filter" : "filters"} active</span>
+          ) : (
+            <span className="opacity-0 select-none">—</span>
+          )}
+        </div>
       </footer>
     </div>
   );

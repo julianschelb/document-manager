@@ -5,6 +5,7 @@ export interface Document {
   tags: string[];
   thumbnailUrl: string;
   fileType: "pdf" | "docx" | "xlsx" | "jpg" | "png" | "txt";
+  fileSizeKb: number;
 }
 
 export interface Binder {

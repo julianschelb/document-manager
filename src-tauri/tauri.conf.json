@@ -14,7 +14,10 @@
       {
         "title": "Document Manager",
         "width": 1024,
-        "height": 768
+        "height": 768,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 14, "y": 26 }
       }
     ],
     "security": {

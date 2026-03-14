@@ -46,7 +46,7 @@ export function Navbar({
   }, [filtersVisible, onToggleFilters]);
 
   return (
-    <nav className="h-14 bg-indigo-900 flex items-center px-4 gap-3 shrink-0">
+    <nav className="h-14 bg-indigo-900 flex items-center pl-[72px] pr-4 gap-3 shrink-0" data-tauri-drag-region>
       {/* Hamburger menu */}
       <button
         onClick={onToggleSidebar}

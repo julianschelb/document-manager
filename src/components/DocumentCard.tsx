@@ -24,11 +24,15 @@ export function DocumentCard({ document, isSelected, onSelect, onTagClick }: Doc
     day: "numeric",
   });
 
+  const formattedSize = document.fileSizeKb >= 1000
+    ? `${(document.fileSizeKb / 1024).toFixed(1)} MB`
+    : `${document.fileSizeKb} KB`;
+
   const fileType = fileTypeConfig[document.fileType] ?? fileTypeConfig.txt;
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+      className={`aspect-[210/297] flex flex-col bg-white dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:scale-[1.03] ${
         isSelected ? "ring-2 ring-blue-500 ring-offset-1" : ""
       }`}
       style={{
@@ -39,16 +43,16 @@ export function DocumentCard({ document, isSelected, onSelect, onTagClick }: Doc
       onClick={onSelect}
     >
       {/* Thumbnail */}
-      <div className="aspect-[3/4] bg-gray-50 dark:bg-gray-700 overflow-hidden">
+      <div className="flex-1 bg-gray-50 dark:bg-gray-700 overflow-hidden">
         <img
           src={document.thumbnailUrl}
           alt={document.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top"
         />
       </div>
 
       {/* Info */}
-      <div className="px-3 pt-2.5 pb-3">
+      <div className="shrink-0 px-3 pt-2.5 pb-3 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-start gap-1.5 mb-1">
           <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-100 line-clamp-2 flex-1 leading-snug">
             {document.title}
@@ -60,7 +64,7 @@ export function DocumentCard({ document, isSelected, onSelect, onTagClick }: Doc
             {fileType.label}
           </span>
         </div>
-        <p className="text-[10px] text-gray-400 mb-2">{formattedDate}</p>
+        <p className="text-[10px] text-gray-400 mb-2">{formattedDate} · {formattedSize}</p>
         <div className="flex flex-wrap gap-1">
           {document.tags.map((tag) => {
             const color = getTagColor(tag);
