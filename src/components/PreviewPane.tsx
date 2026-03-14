@@ -15,7 +15,7 @@ const fileTypeConfig: Record<string, { label: string; bg: string; text: string }
 
 const IMAGE_TYPES = ["jpg", "jpeg", "png", "gif", "webp", "bmp"];
 const PDF_TYPE = "pdf";
-const DEFAULT_WIDTH = 384;
+const DEFAULT_WIDTH = 461; // 384 * 1.2
 const MIN_WIDTH = 260;
 const MAX_WIDTH = 680;
 
@@ -191,7 +191,7 @@ export function PreviewPane({
       </div>
 
       {/* Preview area */}
-      <div className="shrink-0 bg-gray-100 dark:bg-gray-700" style={{ height: 220 }}>
+      <div className="shrink-0 bg-gray-100 dark:bg-gray-700" style={{ height: 440 }}>
         {hasPreview ? (
           isPdf ? (
             <iframe

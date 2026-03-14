@@ -133,6 +133,51 @@ export function BinderList({
 
       <nav className="flex-1 overflow-y-auto p-3">
         <div className="space-y-1">
+          {/* Permanent "All Documents" entry */}
+          <div className={`relative group rounded-lg transition-all duration-200 ${
+            selectedBinder === null
+              ? "bg-white dark:bg-gray-700 shadow-sm"
+              : "hover:bg-white/60 dark:hover:bg-gray-700/60"
+          }`}>
+            <button
+              className="w-full flex items-center gap-3 px-3 py-2 cursor-pointer text-left"
+              onClick={() => onSelectBinder(null)}
+            >
+              {/* Mini notebook cover */}
+              <div
+                className={`relative shrink-0 rounded-md overflow-hidden shadow-md transition-all duration-200 ${
+                  selectedBinder === null ? "scale-105 shadow-lg" : "group-hover:scale-105 group-hover:shadow-lg"
+                }`}
+                style={{ width: 44, height: 58, backgroundColor: "#6366f1" }}
+              >
+                <div className="absolute top-0 bottom-0" style={{ left: "62%", width: 6, backgroundColor: "rgba(0,0,0,0.18)" }} />
+                <div className="absolute top-0 bottom-0 left-0 w-px" style={{ backgroundColor: "rgba(255,255,255,0.3)" }} />
+                <div className="absolute bottom-0 left-0 right-0 h-px" style={{ backgroundColor: "rgba(0,0,0,0.15)" }} />
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold truncate ${
+                  selectedBinder === null ? "text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"
+                }`}>
+                  All Documents
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  {documents.length} document{documents.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+
+              {/* Selection indicator */}
+              {selectedBinder === null && (
+                <div className="w-1.5 h-6 rounded-full shrink-0" style={{ backgroundColor: "#6366f1" }} />
+              )}
+            </button>
+          </div>
+
+          {binders.length > 0 && (
+            <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+          )}
+
           {binders.map((binder) => {
             const count = getBinderDocuments(binder, documents).length;
             const isSelected = selectedBinder?.id === binder.id;
