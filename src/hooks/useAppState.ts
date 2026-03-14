@@ -65,17 +65,19 @@ export function useAppState() {
       cmds
         .analyzeDocumentWithAi(filePath, fileType, content, allTags)
         .then((analysis) => {
-          const enriched = stateRef.current.documents.map((d) =>
-            d.id === docId
-              ? {
-                  ...d,
-                  title: analysis.title,
-                  tags: analysis.tags,
-                  summary: analysis.summary,
-                  ...(analysis.correspondenceDate ? { correspondenceDate: analysis.correspondenceDate } : {}),
-                }
-              : d
-          );
+          const enriched = stateRef.current.documents.map((d) => {
+            if (d.id !== docId) return d;
+            // Preserve manually added tags; AI tags are additive on top
+            const manual = d.manualTags ?? [];
+            const merged = [...new Set([...manual, ...analysis.tags])];
+            return {
+              ...d,
+              title: analysis.title,
+              tags: merged,
+              summary: analysis.summary,
+              ...(analysis.correspondenceDate ? { correspondenceDate: analysis.correspondenceDate } : {}),
+            };
+          });
           stateRef.current = { ...stateRef.current, documents: enriched };
           setDocuments(enriched);
           persist();
@@ -126,9 +128,12 @@ export function useAppState() {
 
   const updateDoc = useCallback(
     async (docId: string, updates: Partial<Pick<Document, "title" | "tags" | "correspondenceDate">>) => {
-      const newDocs = stateRef.current.documents.map((d) =>
-        d.id === docId ? { ...d, ...updates } : d
-      );
+      const newDocs = stateRef.current.documents.map((d) => {
+        if (d.id !== docId) return d;
+        // When the user explicitly sets tags, record them as the new manual set
+        const manualTags = updates.tags !== undefined ? updates.tags : d.manualTags;
+        return { ...d, ...updates, manualTags };
+      });
       stateRef.current = { ...stateRef.current, documents: newDocs };
       setDocuments(newDocs);
       await persist();
@@ -184,6 +189,7 @@ export function useAppState() {
       const newDocs = stateRef.current.documents.map((d) => ({
         ...d,
         tags: d.tags.map((t) => (t === oldTag ? trimmed : t)),
+        manualTags: (d.manualTags ?? []).map((t) => (t === oldTag ? trimmed : t)),
       }));
       const newBinders = stateRef.current.binders.map((b) => ({
         ...b,
@@ -212,6 +218,7 @@ export function useAppState() {
       const newDocs = stateRef.current.documents.map((d) => ({
         ...d,
         tags: d.tags.filter((t) => t !== tag),
+        manualTags: (d.manualTags ?? []).filter((t) => t !== tag),
       }));
       const newBinders = stateRef.current.binders.map((b) => ({
         ...b,

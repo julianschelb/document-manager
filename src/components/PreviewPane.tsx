@@ -433,7 +433,7 @@ export function PreviewPane({
               Content {contentExpanded ? "▾" : "▸"}
             </button>
             {contentExpanded && (
-              <pre className="text-xs text-gray-600 dark:text-gray-300 font-mono whitespace-pre-wrap break-words max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg p-2 leading-relaxed">
+              <pre className="text-xs text-gray-600 dark:text-gray-300 font-mono whitespace-pre-wrap wrap-break-word max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg p-2 leading-relaxed">
                 {doc.content}
               </pre>
             )}

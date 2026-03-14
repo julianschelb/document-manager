@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Document } from "../types";
 import { getTagColor } from "../utils/tagColors";
 import { thumbnailSrc } from "../utils/assetUrl";
@@ -12,6 +13,8 @@ const fileTypeConfig: Record<string, { label: string; bg: string; text: string }
   png:  { label: "PNG",  bg: "#fef9c3", text: "#ca8a04" },
   txt:  { label: "TXT",  bg: "#f3f4f6", text: "#4b5563" },
 };
+
+const VISIBLE_TAG_COUNT = 3;
 
 interface DocumentCardProps {
   document: Document;
@@ -41,6 +44,22 @@ export function DocumentCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Overflow tags popup
+  const overflowBtnRef = useRef<HTMLButtonElement>(null);
+  const [overflowPos, setOverflowPos] = useState<{ left: number; bottom: number } | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showOverflow() {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    if (!overflowBtnRef.current) return;
+    const r = overflowBtnRef.current.getBoundingClientRect();
+    setOverflowPos({ left: r.left, bottom: window.innerHeight - r.top + 6 });
+  }
+
+  function scheduleHideOverflow() {
+    hideTimer.current = setTimeout(() => setOverflowPos(null), 120);
+  }
+
   useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(e: MouseEvent) {
@@ -66,6 +85,9 @@ export function DocumentCard({
   const fileType = fileTypeConfig[doc.fileType] ?? fileTypeConfig.txt;
   const thumbUrl = thumbnailSrc(doc.thumbnailPath);
 
+  const visibleTags = doc.tags.slice(0, VISIBLE_TAG_COUNT);
+  const overflowTags = doc.tags.slice(VISIBLE_TAG_COUNT);
+
   function handleClick(e: React.MouseEvent) {
     if (e.metaKey || e.ctrlKey) {
       e.preventDefault();
@@ -77,7 +99,7 @@ export function DocumentCard({
 
   return (
     <div
-      className={`group relative aspect-[210/297] flex flex-col bg-white dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:scale-[1.03] ${
+      className={`group relative aspect-210/297 flex flex-col bg-white dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:scale-[1.03] ${
         isSelected || isMultiSelected ? "ring-2 ring-blue-500 ring-offset-1" : ""
       }`}
       style={{
@@ -203,26 +225,65 @@ export function DocumentCard({
         <p className="text-[10px] text-gray-400 mb-2">
           {formattedDate} · {formattedSize}
         </p>
+
+        {/* Tags: show first 3, +N badge for the rest */}
         <div className="flex flex-wrap gap-1">
-          {doc.tags.map((tag) => {
+          {visibleTags.map((tag) => {
             const color = getTagColor(tag);
             return (
               <button
                 key={tag}
                 className="px-1.5 py-0.5 text-[9px] font-medium rounded-full border-none cursor-pointer transition-transform hover:scale-105"
                 style={{ backgroundColor: color.bg, color: color.text }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTagClick(tag);
-                }}
+                onClick={(e) => { e.stopPropagation(); onTagClick(tag); }}
                 title={`Filter by ${tag}`}
               >
                 {tag}
               </button>
             );
           })}
+
+          {overflowTags.length > 0 && (
+            <button
+              ref={overflowBtnRef}
+              className="px-1.5 py-0.5 text-[9px] font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              onMouseEnter={showOverflow}
+              onMouseLeave={scheduleHideOverflow}
+            >
+              +{overflowTags.length}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Overflow tags popup — rendered in a portal to escape overflow:hidden */}
+      {overflowPos &&
+        createPortal(
+          <div
+            className="fixed z-9999 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 flex flex-wrap gap-1 max-w-50"
+            style={{ left: overflowPos.left, bottom: overflowPos.bottom }}
+            onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current); }}
+            onMouseLeave={scheduleHideOverflow}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {overflowTags.map((tag) => {
+              const color = getTagColor(tag);
+              return (
+                <button
+                  key={tag}
+                  className="px-1.5 py-0.5 text-[9px] font-medium rounded-full border-none cursor-pointer transition-transform hover:scale-105"
+                  style={{ backgroundColor: color.bg, color: color.text }}
+                  onClick={(e) => { e.stopPropagation(); onTagClick(tag); setOverflowPos(null); }}
+                  title={`Filter by ${tag}`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

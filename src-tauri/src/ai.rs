@@ -149,7 +149,7 @@ pub async fn analyze_document(
 
     let system = serde_json::json!({
         "role": "system",
-        "content": "You are a document analysis assistant. Analyze the document provided and respond with a JSON object containing exactly four keys: \"title\" (the verbatim or near-verbatim title as it appears in the document — use the document's own heading, paper title, subject line, invoice number + vendor name, contract title, or equivalent identifier; only fall back to a concise descriptive title if the document has no explicit title), \"tags\" (an array of 3–7 lowercase thematic category tags — ONLY use broad, folder-like grouping terms that will apply to many documents, never to just one; good tags are domain areas (\"finance\", \"banking\", \"insurance\", \"tax\", \"invoice\", \"contract\", \"school\", \"university\", \"research\", \"machine-learning\", \"nlp\", \"medical\", \"legal\", \"government\", \"travel\", \"employment\", \"real-estate\") or organisation names (\"zdf\", \"deutsche-bank\", \"amazon\"); NEVER use specific technology names (\"BERT\", \"GPT\", \"transformer\"), proper nouns from the content, or any term that uniquely identifies this single document rather than a class of documents; for academic papers use only the research field (e.g. \"nlp\", \"computer-vision\", \"machine-learning\", \"physics\"); reuse tags from the existing list when appropriate), \"summary\" (exactly 2 complete sentences summarizing the main content and purpose), and \"correspondenceDate\" (the date the document was written, issued, received, or otherwise corresponds to — look for explicit dates in the body such as letter dates, invoice dates, contract dates, report dates; return a string in YYYY-MM-DD format, or null if no clear date is found). Return only valid JSON, no markdown, no extra text."
+        "content": "You are a document analysis assistant. Analyze the document provided and respond with a JSON object containing exactly four keys: \"title\" (the verbatim or near-verbatim title as it appears in the document — use the document's own heading, paper title, subject line, invoice number + vendor name, contract title, or equivalent identifier; only fall back to a concise descriptive title if the document has no explicit title), \"tags\" (an array of 5–15 lowercase tags — be thorough and extract tags from every useful dimension: (1) domain/theme: \"finance\", \"invoice\", \"contract\", \"tax\", \"insurance\", \"legal\", \"medical\", \"research\", \"university\", \"employment\", \"travel\", \"real-estate\", \"government\"; (2) companies, organisations, and brands mentioned: \"amazon\", \"deutsche-bank\", \"zdf\", \"apple\", \"google\", etc.; (3) senders and recipients by name or role: \"julian\", \"hr-department\", \"steuerberater\"; (4) document language: \"german\", \"english\", \"french\", etc.; (5) document type: \"letter\", \"receipt\", \"statement\", \"thesis\", \"paper\", \"form\", \"report\", \"certificate\"; (6) significant keywords from the title or subject line; (7) technology, product, or topic names for technical documents: \"machine-learning\", \"nlp\", \"python\", \"kubernetes\"; always reuse tags from the existing list when they fit; lowercase, hyphenate multi-word tags), \"summary\" (exactly 2 complete sentences summarizing the main content and purpose), and \"correspondenceDate\" (the date the document was written, issued, received, or otherwise corresponds to — look for explicit dates in the body such as letter dates, invoice dates, contract dates, report dates; return a string in YYYY-MM-DD format, or null if no clear date is found). Return only valid JSON, no markdown, no extra text."
     });
 
     let tags_hint = if existing_tags.is_empty() {
@@ -197,7 +197,7 @@ pub async fn analyze_document(
     let body = serde_json::json!({
         "model": "gpt-4o-mini",
         "response_format": { "type": "json_object" },
-        "max_tokens": 600,
+        "max_tokens": 800,
         "messages": [
             system,
             { "role": "user", "content": user_content }
@@ -252,6 +252,7 @@ struct BinderResult {
 
 pub async fn suggest_binders(
     tags: &[String],
+    doc_tag_sets: &[Vec<String>],
     api_key: &str,
 ) -> Result<Vec<BinderSuggestion>, String> {
     if tags.is_empty() {
@@ -260,18 +261,42 @@ pub async fn suggest_binders(
 
     let tag_list = tags.join(", ");
 
+    // Build a compact co-occurrence hint: list each document's tags (skip empty / single-tag docs)
+    let cooccurrence: Vec<String> = doc_tag_sets
+        .iter()
+        .filter(|s| s.len() >= 2)
+        .map(|s| s.join(", "))
+        .collect();
+
+    let cooccurrence_section = if cooccurrence.is_empty() {
+        String::new()
+    } else {
+        // Deduplicate and cap to 60 rows to keep the prompt short
+        let mut seen = std::collections::HashSet::new();
+        let rows: Vec<&String> = cooccurrence
+            .iter()
+            .filter(|row| seen.insert(row.as_str()))
+            .take(60)
+            .collect();
+        format!(
+            "\n\nTag co-occurrences observed across documents (each line = one document's tags):\n{}",
+            rows.iter().map(|r| format!("- {}", r)).collect::<Vec<_>>().join("\n")
+        )
+    };
+
     let body = serde_json::json!({
         "model": "gpt-4o-mini",
         "response_format": { "type": "json_object" },
-        "max_tokens": 400,
+        "max_tokens": 1000,
         "messages": [
             {
                 "role": "system",
-                "content": "You are a document organisation assistant. Given a list of document tags, group them into a small number of broad, meaningful binder categories. Each binder should be a high-level theme (e.g. 'Finance', 'Research', 'Legal', 'Insurance'). Use short, human-readable names (title-case, 1–3 words). Every tag must appear in exactly one binder. Return a JSON object with a single key \"binders\" whose value is an array of objects, each with keys \"name\" (string) and \"tags\" (array of strings from the input). Do not invent new tags. Return only valid JSON."
+                "content": "You are a document organisation assistant. Partition ALL provided tags into non-overlapping binder categories. The number of binders should match the natural structure of the data — typically between 4 and 25. Each binder must be semantically tight: either (a) a single organisation, company, or institution (e.g. \"Finanzamt\", \"KFW\", \"Yuh\", \"Salt\"), or (b) a single coherent life/work topic (e.g. \"Uni\", \"Rent\", \"Wohnungssuche\", \"Rente\"). NEVER merge unrelated organisations or topics into one binder just to reduce the count — it is far better to have more specific binders than to mix things that belong apart. Do not create a binder like \"Education & Transport\" or \"Finance & Housing\". Group tags only when they clearly belong to the same entity or the same narrow topic. Tags that co-occur frequently on the same documents should go in the same binder. Every input tag must appear in exactly one binder — no tag may be omitted or repeated. Use short, human-readable binder names (title-case, 1–3 words). Return a JSON object with a single key \"binders\" whose value is an array of objects each with \"name\" (string) and \"tags\" (array of strings from the input). Only valid JSON, no markdown."
             },
             {
                 "role": "user",
-                "content": format!("Group these tags into binders: {}", tag_list)
+                "content": format!("Partition these tags into binders: {}{}",
+                    tag_list, cooccurrence_section)
             }
         ]
     });

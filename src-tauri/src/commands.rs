@@ -90,6 +90,7 @@ pub async fn import_document(
         title,
         date_added,
         tags: vec![],
+        manual_tags: vec![],
         thumbnail_path: thumb_path,
         file_type: ext,
         file_size_kb,
@@ -168,10 +169,11 @@ pub async fn delete_document_files(
 pub async fn suggest_binders_with_ai(
     app: tauri::AppHandle,
     tags: Vec<String>,
+    document_tag_sets: Vec<Vec<String>>,
 ) -> Result<Vec<BinderSuggestion>, String> {
     let state = do_load(&app)?;
     if state.open_ai_api_key.is_empty() {
         return Err("AI_NO_KEY".to_string());
     }
-    crate::ai::suggest_binders(&tags, &state.open_ai_api_key).await
+    crate::ai::suggest_binders(&tags, &document_tag_sets, &state.open_ai_api_key).await
 }

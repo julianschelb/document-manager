@@ -50,7 +50,7 @@ export function Navbar({
 
   return (
     <nav className="bg-indigo-900 shrink-0" data-tauri-drag-region>
-      <div className="h-14 grid grid-cols-3 items-center pl-[72px] pr-4">
+      <div className="h-14 grid grid-cols-3 items-center pl-18 pr-4">
         {/* Left: hamburger + logo + add button */}
         <div className="flex items-center gap-3">
           <button
@@ -84,7 +84,7 @@ export function Navbar({
             {selectedBinder && (
               <div className="flex items-center gap-1.5 bg-white/15 pl-2 pr-1 py-0.5 rounded shrink-0">
                 <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: selectedBinder.color }} />
-                <span className="text-white/90 text-xs font-medium max-w-[80px] truncate">
+                <span className="text-white/90 text-xs font-medium max-w-20 truncate">
                   {selectedBinder.name}
                 </span>
                 <button onClick={onClearBinder} className="text-white/50 hover:text-white/80 shrink-0">

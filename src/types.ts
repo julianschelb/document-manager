@@ -3,6 +3,7 @@ export interface Document {
   title: string;
   dateAdded: string;
   tags: string[];
+  manualTags?: string[];
   thumbnailPath: string;
   fileType: "pdf" | "docx" | "xlsx" | "jpg" | "jpeg" | "png" | "gif" | "txt" | "bin";
   fileSizeKb: number;
@@ -19,6 +20,7 @@ export interface Binder {
   name: string;
   color: string;
   filterTags: string[];
+  source?: "manual" | "ai";
 }
 
 export interface AppState {

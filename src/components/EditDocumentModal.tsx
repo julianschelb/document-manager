@@ -93,7 +93,7 @@ export function EditDocumentModal({
           <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
             Tags
           </label>
-          <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+          <div className="flex flex-wrap gap-1.5 min-h-8 p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
             {tags.map((tag) => {
               const color = getTagColor(tag);
               return (

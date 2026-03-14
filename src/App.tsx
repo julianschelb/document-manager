@@ -69,9 +69,12 @@ function App() {
       : documents;
 
     return docs.filter((doc) => {
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        searchQuery === "" ||
-        doc.title.toLowerCase().includes(searchQuery.toLowerCase());
+        q === "" ||
+        doc.title.toLowerCase().includes(q) ||
+        doc.summary?.toLowerCase().includes(q) ||
+        doc.content?.toLowerCase().includes(q);
       const matchesTags =
         selectedTags.length === 0 ||
         selectedTags.every((tag) => doc.tags.includes(tag));
@@ -156,20 +159,27 @@ function App() {
   const handleAutoOrganize = useCallback(async () => {
     if (allTags.length === 0) return;
 
-    let colorIdx = binders.length;
+    let colorIdx = 0;
 
     if (openAiApiKey) {
-      // AI path: ask the model to group tags into meaningful binder categories
-      const suggestions = await suggestBindersWithAi(allTags).catch(() => null);
+      // Pass each document's tag set so the AI can keep co-occurring tags together
+      const documentTagSets = documents
+        .map((d) => d.tags)
+        .filter((t) => t.length >= 2);
+
+      const suggestions = await suggestBindersWithAi(allTags, documentTagSets).catch(() => null);
       if (suggestions && suggestions.length > 0) {
-        const existingNames = new Set(binders.map((b) => b.name.toLowerCase()));
+        // Full reorganize: only remove AI-generated binders; keep manual ones
+        for (const b of binders.filter((b) => b.source === "ai")) {
+          await deleteBinder(b.id);
+        }
         for (const s of suggestions) {
-          if (existingNames.has(s.name.toLowerCase())) continue;
           await addBinder({
             id: crypto.randomUUID(),
             name: s.name,
             color: BINDER_COLORS[colorIdx % BINDER_COLORS.length],
             filterTags: s.tags,
+            source: "ai",
           });
           colorIdx++;
         }
@@ -188,10 +198,11 @@ function App() {
         name: tag.charAt(0).toUpperCase() + tag.slice(1),
         color: BINDER_COLORS[colorIdx % BINDER_COLORS.length],
         filterTags: [tag],
+        source: "ai",
       });
       colorIdx++;
     }
-  }, [binders, allTags, openAiApiKey, addBinder]);
+  }, [binders, allTags, openAiApiKey, addBinder, deleteBinder, documents]);
 
   // Import files via native file picker
   const handleImport = useCallback(async () => {
@@ -318,6 +329,7 @@ function App() {
         name: data.name,
         color: data.color,
         filterTags: data.filterTags,
+        source: "manual",
       });
     } else {
       await addBinder({
@@ -325,6 +337,7 @@ function App() {
         name: data.name,
         color: data.color,
         filterTags: data.filterTags,
+        source: "manual",
       });
     }
     setEditingBinder(null);
@@ -512,7 +525,7 @@ function App() {
             <span className="text-blue-500">{selectedDocIds.size} selected</span>
           ) : selectedDocument ? (
             <>
-              <span className="truncate max-w-[160px] text-gray-600 dark:text-gray-300">
+              <span className="truncate max-w-40 text-gray-600 dark:text-gray-300">
                 {selectedDocument.title}
               </span>
               <span className="text-gray-300 dark:text-gray-600">·</span>

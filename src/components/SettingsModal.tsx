@@ -108,7 +108,7 @@ export function SettingsModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-[480px] max-h-[80vh] flex flex-col border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-120 max-h-[80vh] flex flex-col border border-gray-200 dark:border-gray-700">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
@@ -177,7 +177,7 @@ export function SettingsModal({
                     )}
 
                     {/* Usage count */}
-                    <span className="shrink-0 text-[11px] text-gray-400 dark:text-gray-500 tabular-nums min-w-[2rem] text-right">
+                    <span className="shrink-0 text-[11px] text-gray-400 dark:text-gray-500 tabular-nums min-w-8 text-right">
                       {count} {count === 1 ? "doc" : "docs"}
                     </span>
 
@@ -251,14 +251,14 @@ export function SettingsModal({
               <span className="text-sm text-gray-700 dark:text-gray-300">Enable AI on import</span>
               <button
                 onClick={() => onUpdateAiEnabled(!aiEnabled)}
-                className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
                   aiEnabled ? "bg-indigo-500" : "bg-gray-300 dark:bg-gray-600"
                 }`}
                 title={aiEnabled ? "Click to disable" : "Click to enable"}
               >
                 <span
                   className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                    aiEnabled ? "translate-x-[19px]" : "translate-x-[3px]"
+                    aiEnabled ? "translate-x-4.75" : "translate-x-0.75"
                   }`}
                 />
               </button>

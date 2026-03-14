@@ -50,7 +50,7 @@ export function DocumentDetail({ document, onTagClick, onClose }: DocumentDetail
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {/* Thumbnail */}
-        <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700">
+        <div className="aspect-3/4 bg-gray-100 dark:bg-gray-700">
           <img
             src={thumbnailSrc(document.thumbnailPath)}
             alt={document.title}

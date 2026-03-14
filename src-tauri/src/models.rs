@@ -19,6 +19,9 @@ pub struct Document {
     pub summary: String,
     #[serde(default)]
     pub correspondence_date: String,
+    /// Tags the user explicitly added or confirmed — preserved across AI re-enrichment
+    #[serde(default)]
+    pub manual_tags: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -28,6 +31,9 @@ pub struct Binder {
     pub name: String,
     pub color: String,
     pub filter_tags: Vec<String>,
+    /// "manual" | "ai" | "" (empty = legacy, treated as manual)
+    #[serde(default)]
+    pub source: String,
 }
 
 fn default_true() -> bool {

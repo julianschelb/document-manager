@@ -51,7 +51,11 @@ export interface BinderSuggestion {
 }
 
 export async function suggestBindersWithAi(
-  tags: string[]
+  tags: string[],
+  documentTagSets: string[][]
 ): Promise<BinderSuggestion[]> {
-  return invoke<BinderSuggestion[]>("suggest_binders_with_ai", { tags });
+  return invoke<BinderSuggestion[]>("suggest_binders_with_ai", {
+    tags,
+    documentTagSets,
+  });
 }
