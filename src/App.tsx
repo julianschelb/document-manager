@@ -9,6 +9,7 @@ import { EditDocumentModal } from "./components/EditDocumentModal";
 import { BinderModal } from "./components/BinderModal";
 import { BulkActionBar } from "./components/BulkActionBar";
 import { SortControls } from "./components/SortControls";
+import { SettingsModal } from "./components/SettingsModal";
 import { useAppState } from "./hooks/useAppState";
 import { getAllTags, getBinderDocuments } from "./utils/binderUtils";
 import "./styles.css";
@@ -17,6 +18,7 @@ function App() {
   const {
     documents,
     binders,
+    customTags,
     loading,
     importDoc,
     deleteDoc,
@@ -25,6 +27,9 @@ function App() {
     addBinder,
     updateBinder,
     deleteBinder,
+    renameTagEverywhere,
+    removeTagEverywhere,
+    addCustomTag,
   } = useAppState();
 
   const [selectedBinder, setSelectedBinder] = useState<Binder | null>(null);
@@ -47,6 +52,7 @@ function App() {
   } | null>(null);
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
   const [editingBinder, setEditingBinder] = useState<Binder | "new" | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const allTags = useMemo(() => getAllTags(documents), [documents]);
 
@@ -187,7 +193,7 @@ function App() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (confirmDelete || editingDoc || editingBinder) return;
+        if (confirmDelete || editingDoc || editingBinder || settingsOpen) return;
         setSelectedDocument(null);
         setSelectedDocIds(new Set());
         setFiltersVisible(false);
@@ -216,7 +222,7 @@ function App() {
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [selectedDocument, selectedDocIds, confirmDelete, editingDoc, editingBinder, openDoc]);
+  }, [selectedDocument, selectedDocIds, confirmDelete, editingDoc, editingBinder, settingsOpen, openDoc]);
 
   async function handleConfirmDelete() {
     if (!confirmDelete) return;
@@ -291,6 +297,7 @@ function App() {
         selectedTags={selectedTags}
         onTagToggle={handleTagToggle}
         onClearFilters={handleClearFilters}
+        onSettings={() => setSettingsOpen(true)}
       />
 
       {/* Main content */}
@@ -505,6 +512,17 @@ function App() {
           existingTags={allTags}
           onSave={handleBinderSave}
           onClose={() => setEditingBinder(null)}
+        />
+      )}
+
+      {settingsOpen && (
+        <SettingsModal
+          documents={documents}
+          customTags={customTags}
+          onClose={() => setSettingsOpen(false)}
+          onRenameTag={renameTagEverywhere}
+          onRemoveTag={removeTagEverywhere}
+          onAddTag={addCustomTag}
         />
       )}
     </div>

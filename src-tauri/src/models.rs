@@ -29,4 +29,6 @@ pub struct Binder {
 pub struct AppState {
     pub documents: Vec<Document>,
     pub binders: Vec<Binder>,
+    #[serde(default)]
+    pub custom_tags: Vec<String>,
 }

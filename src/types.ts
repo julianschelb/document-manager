@@ -21,6 +21,7 @@ export interface Binder {
 export interface AppState {
   documents: Document[];
   binders: Binder[];
+  customTags: string[];
 }
 
 export type SortField = "dateAdded" | "title" | "fileSizeKb" | "fileType";

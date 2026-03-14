@@ -121,14 +121,14 @@ export function BinderList({
           Binders
         </span>
         <button
-          onClick={onNewBinder}
-          className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-          title="New binder"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
+            onClick={onNewBinder}
+            className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            title="New binder"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3">

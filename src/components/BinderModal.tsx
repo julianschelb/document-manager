@@ -58,7 +58,7 @@ export function BinderModal({ binder, existingTags, onSave, onClose }: BinderMod
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-96 p-6 flex flex-col gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[480px] p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
             {binder ? "Edit Binder" : "New Binder"}
