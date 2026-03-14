@@ -16,6 +16,7 @@ pub fn run() {
             commands::open_document,
             commands::delete_document_files,
             commands::analyze_document_with_ai,
+            commands::suggest_binders_with_ai,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

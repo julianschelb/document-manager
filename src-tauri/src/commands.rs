@@ -7,7 +7,7 @@ use hex;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::models::{AiAnalysis, AppState, Document};
+use crate::models::{AiAnalysis, AppState, BinderSuggestion, Document};
 use crate::storage::{get_app_dirs, load_state as do_load, save_state as do_save};
 use crate::thumbnail::generate_thumbnail;
 
@@ -162,4 +162,16 @@ pub async fn delete_document_files(
         }
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn suggest_binders_with_ai(
+    app: tauri::AppHandle,
+    tags: Vec<String>,
+) -> Result<Vec<BinderSuggestion>, String> {
+    let state = do_load(&app)?;
+    if state.open_ai_api_key.is_empty() {
+        return Err("AI_NO_KEY".to_string());
+    }
+    crate::ai::suggest_binders(&tags, &state.open_ai_api_key).await
 }

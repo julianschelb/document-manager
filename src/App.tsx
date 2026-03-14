@@ -12,6 +12,7 @@ import { SortControls } from "./components/SortControls";
 import { SettingsModal } from "./components/SettingsModal";
 import { useAppState } from "./hooks/useAppState";
 import { getAllTags, getBinderDocuments } from "./utils/binderUtils";
+import { suggestBindersWithAi } from "./lib/tauriCommands";
 import "./styles.css";
 
 function App() {
@@ -145,6 +146,52 @@ function App() {
     setSearchQuery("");
     setSelectedTags([]);
   };
+
+  // Create binders from all available tags — AI-grouped when API key is set,
+  // otherwise one binder per tag not already covered.
+  const BINDER_COLORS = [
+    "#6366f1", "#8b5cf6", "#ec4899", "#ef4444", "#f97316",
+    "#eab308", "#22c55e", "#14b8a6", "#3b82f6", "#06b6d4",
+  ];
+  const handleAutoOrganize = useCallback(async () => {
+    if (allTags.length === 0) return;
+
+    let colorIdx = binders.length;
+
+    if (openAiApiKey) {
+      // AI path: ask the model to group tags into meaningful binder categories
+      const suggestions = await suggestBindersWithAi(allTags).catch(() => null);
+      if (suggestions && suggestions.length > 0) {
+        const existingNames = new Set(binders.map((b) => b.name.toLowerCase()));
+        for (const s of suggestions) {
+          if (existingNames.has(s.name.toLowerCase())) continue;
+          await addBinder({
+            id: crypto.randomUUID(),
+            name: s.name,
+            color: BINDER_COLORS[colorIdx % BINDER_COLORS.length],
+            filterTags: s.tags,
+          });
+          colorIdx++;
+        }
+        return;
+      }
+    }
+
+    // Fallback: one binder per tag not already covered
+    const coveredTags = new Set(
+      binders.filter((b) => b.filterTags.length === 1).map((b) => b.filterTags[0])
+    );
+    const newTags = allTags.filter((t) => !coveredTags.has(t));
+    for (const tag of newTags) {
+      await addBinder({
+        id: crypto.randomUUID(),
+        name: tag.charAt(0).toUpperCase() + tag.slice(1),
+        color: BINDER_COLORS[colorIdx % BINDER_COLORS.length],
+        filterTags: [tag],
+      });
+      colorIdx++;
+    }
+  }, [binders, allTags, openAiApiKey, addBinder]);
 
   // Import files via native file picker
   const handleImport = useCallback(async () => {
@@ -338,6 +385,7 @@ function App() {
             onDeleteBinder={(b) =>
               setConfirmDelete({ type: "binder", id: b.id, title: b.name })
             }
+            onAutoOrganize={handleAutoOrganize}
           />
         </div>
 

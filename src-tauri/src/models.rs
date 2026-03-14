@@ -61,6 +61,13 @@ impl Default for AppState {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct BinderSuggestion {
+    pub name: String,
+    pub tags: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AiAnalysis {
     pub title: String,
     pub tags: Vec<String>,

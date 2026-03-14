@@ -5,7 +5,7 @@ use std::process::Command;
 use base64::Engine;
 use serde::Deserialize;
 
-use crate::models::AiAnalysis;
+use crate::models::{AiAnalysis, BinderSuggestion};
 
 const IMAGE_TYPES: &[&str] = &["jpg", "jpeg", "png", "gif", "webp"];
 const MAX_CONTENT_CHARS: usize = 8_000;
@@ -149,7 +149,7 @@ pub async fn analyze_document(
 
     let system = serde_json::json!({
         "role": "system",
-        "content": "You are a document analysis assistant. Analyze the document provided and respond with a JSON object containing exactly four keys: \"title\" (the verbatim or near-verbatim title as it appears in the document — use the document's own heading, paper title, subject line, invoice number + vendor name, contract title, or equivalent identifier; only fall back to a concise descriptive title if the document has no explicit title), \"tags\" (an array of 3–7 lowercase topic/category tags; reuse tags from the existing list when appropriate), \"summary\" (exactly 2 complete sentences summarizing the main content and purpose), and \"correspondenceDate\" (the date the document was written, issued, received, or otherwise corresponds to — look for explicit dates in the body such as letter dates, invoice dates, contract dates, report dates; return a string in YYYY-MM-DD format, or null if no clear date is found). Return only valid JSON, no markdown, no extra text."
+        "content": "You are a document analysis assistant. Analyze the document provided and respond with a JSON object containing exactly four keys: \"title\" (the verbatim or near-verbatim title as it appears in the document — use the document's own heading, paper title, subject line, invoice number + vendor name, contract title, or equivalent identifier; only fall back to a concise descriptive title if the document has no explicit title), \"tags\" (an array of 3–7 lowercase thematic category tags — ONLY use broad, folder-like grouping terms that will apply to many documents, never to just one; good tags are domain areas (\"finance\", \"banking\", \"insurance\", \"tax\", \"invoice\", \"contract\", \"school\", \"university\", \"research\", \"machine-learning\", \"nlp\", \"medical\", \"legal\", \"government\", \"travel\", \"employment\", \"real-estate\") or organisation names (\"zdf\", \"deutsche-bank\", \"amazon\"); NEVER use specific technology names (\"BERT\", \"GPT\", \"transformer\"), proper nouns from the content, or any term that uniquely identifies this single document rather than a class of documents; for academic papers use only the research field (e.g. \"nlp\", \"computer-vision\", \"machine-learning\", \"physics\"); reuse tags from the existing list when appropriate), \"summary\" (exactly 2 complete sentences summarizing the main content and purpose), and \"correspondenceDate\" (the date the document was written, issued, received, or otherwise corresponds to — look for explicit dates in the body such as letter dates, invoice dates, contract dates, report dates; return a string in YYYY-MM-DD format, or null if no clear date is found). Return only valid JSON, no markdown, no extra text."
     });
 
     let tags_hint = if existing_tags.is_empty() {
@@ -240,4 +240,88 @@ pub async fn analyze_document(
         summary: result.summary.unwrap_or_default(),
         correspondence_date: result.correspondence_date,
     })
+}
+
+// ── Binder suggestion ─────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct BinderResult {
+    name: Option<String>,
+    tags: Option<Vec<String>>,
+}
+
+pub async fn suggest_binders(
+    tags: &[String],
+    api_key: &str,
+) -> Result<Vec<BinderSuggestion>, String> {
+    if tags.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let tag_list = tags.join(", ");
+
+    let body = serde_json::json!({
+        "model": "gpt-4o-mini",
+        "response_format": { "type": "json_object" },
+        "max_tokens": 400,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a document organisation assistant. Given a list of document tags, group them into a small number of broad, meaningful binder categories. Each binder should be a high-level theme (e.g. 'Finance', 'Research', 'Legal', 'Insurance'). Use short, human-readable names (title-case, 1–3 words). Every tag must appear in exactly one binder. Return a JSON object with a single key \"binders\" whose value is an array of objects, each with keys \"name\" (string) and \"tags\" (array of strings from the input). Do not invent new tags. Return only valid JSON."
+            },
+            {
+                "role": "user",
+                "content": format!("Group these tags into binders: {}", tag_list)
+            }
+        ]
+    });
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post("https://api.openai.com/v1/chat/completions")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("OpenAI request failed: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status().as_u16();
+        let text = resp.text().await.unwrap_or_default();
+        return Err(format!("OpenAI API error {}: {}", status, text));
+    }
+
+    let parsed: OpenAiResponse = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse OpenAI response: {}", e))?;
+
+    let json_str = parsed
+        .choices
+        .into_iter()
+        .next()
+        .map(|c| c.message.content)
+        .unwrap_or_default();
+
+    #[derive(Deserialize)]
+    struct BinderList {
+        binders: Vec<BinderResult>,
+    }
+
+    let list: BinderList = serde_json::from_str(&json_str)
+        .map_err(|e| format!("Failed to parse binder suggestions: {} — raw: {}", e, json_str))?;
+
+    Ok(list
+        .binders
+        .into_iter()
+        .filter_map(|b| {
+            let name = b.name.filter(|n| !n.is_empty())?;
+            let tags = b.tags.unwrap_or_default();
+            if tags.is_empty() {
+                None
+            } else {
+                Some(BinderSuggestion { name, tags })
+            }
+        })
+        .collect())
 }

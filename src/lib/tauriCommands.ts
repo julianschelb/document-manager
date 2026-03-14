@@ -44,3 +44,14 @@ export async function analyzeDocumentWithAi(
     existingTags,
   });
 }
+
+export interface BinderSuggestion {
+  name: string;
+  tags: string[];
+}
+
+export async function suggestBindersWithAi(
+  tags: string[]
+): Promise<BinderSuggestion[]> {
+  return invoke<BinderSuggestion[]>("suggest_binders_with_ai", { tags });
+}

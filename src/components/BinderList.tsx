@@ -9,6 +9,7 @@ interface BinderListProps {
   onNewBinder: () => void;
   onEditBinder: (binder: Binder) => void;
   onDeleteBinder: (binder: Binder) => void;
+  onAutoOrganize: () => void;
 }
 
 function NotebookCover({
@@ -112,6 +113,7 @@ export function BinderList({
   onNewBinder,
   onEditBinder,
   onDeleteBinder,
+  onAutoOrganize,
 }: BinderListProps) {
   return (
     <aside className="w-72 min-w-72 h-full bg-gray-50 dark:bg-gray-850 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0">
@@ -120,7 +122,17 @@ export function BinderList({
         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Binders
         </span>
-        <button
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onAutoOrganize}
+            className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            title="Auto-generate binders from all tags"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </button>
+          <button
             onClick={onNewBinder}
             className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
             title="New binder"
@@ -129,6 +141,7 @@ export function BinderList({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3">
