@@ -14,6 +14,10 @@ interface NavbarProps {
   allTags: string[];
   selectedTags: string[];
   onTagToggle: (tag: string) => void;
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (v: string) => void;
+  onDateToChange: (v: string) => void;
   onClearFilters: () => void;
   onSettings: () => void;
 }
@@ -30,6 +34,10 @@ export function Navbar({
   allTags,
   selectedTags,
   onTagToggle,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
   onClearFilters,
   onSettings,
 }: NavbarProps) {
@@ -116,7 +124,7 @@ export function Navbar({
             <button
               onClick={onToggleFilters}
               className={`relative shrink-0 p-1.5 rounded transition-colors ${
-                filtersVisible || selectedTags.length > 0
+                filtersVisible || selectedTags.length > 0 || dateFrom || dateTo
                   ? "text-white bg-white/20"
                   : "text-white/50 hover:text-white/80 hover:bg-white/10"
               }`}
@@ -125,9 +133,9 @@ export function Navbar({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              {selectedTags.length > 0 && (
+              {(selectedTags.length > 0 || dateFrom || dateTo) && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-400 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
-                  {selectedTags.length}
+                  {selectedTags.length + (dateFrom || dateTo ? 1 : 0)}
                 </span>
               )}
             </button>
@@ -135,34 +143,73 @@ export function Navbar({
 
           {/* Filter popover */}
           {filtersVisible && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+            <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
               <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Filter by tags</span>
-                {selectedTags.length > 0 && (
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Filters</span>
+                {(selectedTags.length > 0 || dateFrom || dateTo) && (
                   <button onClick={onClearFilters} className="text-xs text-blue-500 hover:text-blue-600">
                     Clear all
                   </button>
                 )}
               </div>
-              <div className="p-3 flex flex-wrap gap-2 max-h-64 overflow-y-auto">
-                {allTags.map((tag) => {
-                  const color = getTagColor(tag);
-                  const isActive = selectedTags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      className="px-2.5 py-1 text-xs font-medium rounded-full transition-all hover:scale-105"
-                      style={{
-                        backgroundColor: isActive ? color.text : color.bg,
-                        color: isActive ? "#fff" : color.text,
-                      }}
-                      onClick={() => onTagToggle(tag)}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
+
+              {/* Date range */}
+              <div className="px-3 pt-3 pb-2">
+                <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">
+                  Date Added
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">From</label>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => onDateFromChange(e.target.value)}
+                      className="w-full px-2 py-1 text-xs text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">To</label>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => onDateToChange(e.target.value)}
+                      className="w-full px-2 py-1 text-xs text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Tags */}
+              {allTags.length > 0 && (
+                <>
+                  <div className="border-t border-gray-100 dark:border-gray-700 mx-3" />
+                  <div className="px-3 pt-2.5 pb-1">
+                    <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">
+                      Tags
+                    </p>
+                  </div>
+                  <div className="px-3 pb-3 flex flex-wrap gap-2 max-h-52 overflow-y-auto">
+                    {allTags.map((tag) => {
+                      const color = getTagColor(tag);
+                      const isActive = selectedTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          className="px-2.5 py-1 text-xs font-medium rounded-full transition-all hover:scale-105"
+                          style={{
+                            backgroundColor: isActive ? color.text : color.bg,
+                            color: isActive ? "#fff" : color.text,
+                          }}
+                          onClick={() => onTagToggle(tag)}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

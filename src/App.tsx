@@ -44,6 +44,8 @@ function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: "dateAdded",
@@ -78,9 +80,11 @@ function App() {
       const matchesTags =
         selectedTags.length === 0 ||
         selectedTags.every((tag) => doc.tags.includes(tag));
-      return matchesSearch && matchesTags;
+      const matchesDateFrom = dateFrom === "" || doc.dateAdded >= dateFrom;
+      const matchesDateTo = dateTo === "" || doc.dateAdded <= dateTo;
+      return matchesSearch && matchesTags && matchesDateFrom && matchesDateTo;
     });
-  }, [searchQuery, selectedTags, selectedBinder, documents]);
+  }, [searchQuery, selectedTags, dateFrom, dateTo, selectedBinder, documents]);
 
   const sortedDocuments = useMemo(() => {
     return [...filteredDocuments].sort((a, b) => {
@@ -148,6 +152,8 @@ function App() {
   const handleClearFilters = () => {
     setSearchQuery("");
     setSelectedTags([]);
+    setDateFrom("");
+    setDateTo("");
   };
 
   // Create binders from all available tags — AI-grouped when API key is set,
@@ -351,7 +357,7 @@ function App() {
     filteredTotalKb >= 1024
       ? `${(filteredTotalKb / 1024).toFixed(1)} MB`
       : `${filteredTotalKb} KB`;
-  const isFiltered = searchQuery !== "" || selectedTags.length > 0;
+  const isFiltered = searchQuery !== "" || selectedTags.length > 0 || dateFrom !== "" || dateTo !== "";
 
   if (loading) {
     return (
@@ -376,6 +382,10 @@ function App() {
         allTags={allTags}
         selectedTags={selectedTags}
         onTagToggle={handleTagToggle}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
         onClearFilters={handleClearFilters}
         onSettings={() => setSettingsOpen(true)}
       />
@@ -537,10 +547,10 @@ function App() {
                   : `${selectedDocument.fileSizeKb} KB`}
               </span>
             </>
-          ) : selectedTags.length > 0 ? (
+          ) : isFiltered ? (
             <span className="text-amber-500">
-              {selectedTags.length}{" "}
-              {selectedTags.length === 1 ? "filter" : "filters"} active
+              {selectedTags.length + (dateFrom || dateTo ? 1 : 0)}{" "}
+              {selectedTags.length + (dateFrom || dateTo ? 1 : 0) === 1 ? "filter" : "filters"} active
             </span>
           ) : (
             <span className="opacity-0 select-none">—</span>
