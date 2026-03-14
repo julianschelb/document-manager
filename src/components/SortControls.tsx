@@ -35,8 +35,8 @@ export function SortControls({ sortConfig, onSortChange }: SortControlsProps) {
             onClick={() => setField(value)}
             className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               isActive
-                ? "bg-white/20 text-white"
-                : "text-white/60 hover:bg-white/10 hover:text-white/80"
+                ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300"
+                : "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
             }`}
           >
             {label}

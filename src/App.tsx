@@ -8,6 +8,7 @@ import { ConfirmModal } from "./components/ConfirmModal";
 import { EditDocumentModal } from "./components/EditDocumentModal";
 import { BinderModal } from "./components/BinderModal";
 import { BulkActionBar } from "./components/BulkActionBar";
+import { SortControls } from "./components/SortControls";
 import { useAppState } from "./hooks/useAppState";
 import { getAllTags, getBinderDocuments } from "./utils/binderUtils";
 import "./styles.css";
@@ -276,7 +277,7 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-[10px] overflow-hidden">
-      {/* Navbar with sort row */}
+      {/* Navbar */}
       <Navbar
         selectedBinder={selectedBinder}
         onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
@@ -290,8 +291,6 @@ function App() {
         selectedTags={selectedTags}
         onTagToggle={handleTagToggle}
         onClearFilters={handleClearFilters}
-        sortConfig={sortConfig}
-        onSortChange={setSortConfig}
       />
 
       {/* Main content */}
@@ -317,6 +316,11 @@ function App() {
 
         {/* Center: Documents Grid */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+          {/* Sort bar */}
+          <div className="shrink-0 flex items-center px-4 h-11 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-xs font-medium text-gray-400 dark:text-gray-500 mr-3">Sort</span>
+            <SortControls sortConfig={sortConfig} onSortChange={setSortConfig} />
+          </div>
           <main className="flex-1 p-6">
             {sortedDocuments.length > 0 ? (
               <div

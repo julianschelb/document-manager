@@ -116,7 +116,7 @@ export function BinderList({
   return (
     <aside className="w-72 min-w-72 h-full bg-gray-50 dark:bg-gray-850 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0">
       {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div className="shrink-0 flex items-center justify-between px-4 h-11 border-b border-gray-200 dark:border-gray-700">
         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Binders
         </span>

@@ -1,7 +1,6 @@
 import { useRef, useEffect } from "react";
-import { Binder, SortConfig } from "../types";
+import { Binder } from "../types";
 import { getTagColor } from "../utils/tagColors";
-import { SortControls } from "./SortControls";
 
 interface NavbarProps {
   selectedBinder: Binder | null;
@@ -16,8 +15,6 @@ interface NavbarProps {
   selectedTags: string[];
   onTagToggle: (tag: string) => void;
   onClearFilters: () => void;
-  sortConfig: SortConfig;
-  onSortChange: (config: SortConfig) => void;
 }
 
 export function Navbar({
@@ -33,8 +30,6 @@ export function Navbar({
   selectedTags,
   onTagToggle,
   onClearFilters,
-  sortConfig,
-  onSortChange,
 }: NavbarProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -52,8 +47,7 @@ export function Navbar({
   }, [filtersVisible, onToggleFilters]);
 
   return (
-    <nav className="bg-indigo-900 flex flex-col shrink-0" data-tauri-drag-region>
-      {/* Top row */}
+    <nav className="bg-indigo-900 shrink-0" data-tauri-drag-region>
       <div className="h-14 flex items-center pl-[72px] pr-4 gap-3">
         {/* Hamburger */}
         <button
@@ -174,11 +168,6 @@ export function Navbar({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Sort row */}
-      <div className="h-9 flex items-center pl-[72px] pr-4 border-t border-white/10">
-        <SortControls sortConfig={sortConfig} onSortChange={onSortChange} />
       </div>
     </nav>
   );
