@@ -6,12 +6,21 @@ export function useAppState() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [binders, setBinders] = useState<Binder[]>([]);
   const [customTags, setCustomTags] = useState<string[]>([]);
+  const [openAiApiKey, setOpenAiApiKey] = useState<string>("");
+  const [aiEnabled, setAiEnabled] = useState<boolean>(true);
+  const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Ref to always have current state in callbacks without stale closure issues
-  const stateRef = useRef<AppState>({ documents, binders, customTags });
-  stateRef.current = { documents, binders, customTags };
+  // Ref always reflects the latest state; mutations update it before persisting
+  const stateRef = useRef<AppState>({
+    documents,
+    binders,
+    customTags,
+    openAiApiKey,
+    aiEnabled,
+  });
+  stateRef.current = { documents, binders, customTags, openAiApiKey, aiEnabled };
 
   // Load on mount
   useEffect(() => {
@@ -21,6 +30,8 @@ export function useAppState() {
         setDocuments(state.documents);
         setBinders(state.binders);
         setCustomTags(state.customTags ?? []);
+        setOpenAiApiKey(state.openAiApiKey ?? "");
+        setAiEnabled(state.aiEnabled ?? true);
         setLoading(false);
       })
       .catch((err) => {
@@ -29,12 +40,56 @@ export function useAppState() {
       });
   }, []);
 
-  // Persist helper — always uses current state ref
-  const persist = useCallback(
-    async (docs: Document[], binds: Binder[], tags: string[]) => {
-      await cmds.saveState({ documents: docs, binders: binds, customTags: tags });
+  // Persist reads everything from stateRef (always current after mutations)
+  const persist = useCallback(async () => {
+    const s = stateRef.current;
+    await cmds.saveState({
+      documents: s.documents,
+      binders: s.binders,
+      customTags: s.customTags,
+      openAiApiKey: s.openAiApiKey,
+      aiEnabled: s.aiEnabled,
+    });
+  }, []);
+
+  // Shared AI enrichment — fire-and-forget
+  const triggerAiEnrichment = useCallback(
+    (docId: string, filePath: string, fileType: string, content: string) => {
+      const allTags = [
+        ...new Set([
+          ...stateRef.current.documents.flatMap((d) => d.tags),
+          ...stateRef.current.customTags,
+        ]),
+      ];
+      setAnalyzingIds((prev) => new Set([...prev, docId]));
+      cmds
+        .analyzeDocumentWithAi(filePath, fileType, content, allTags)
+        .then((analysis) => {
+          const enriched = stateRef.current.documents.map((d) =>
+            d.id === docId
+              ? {
+                  ...d,
+                  title: analysis.title,
+                  tags: analysis.tags,
+                  summary: analysis.summary,
+                  ...(analysis.correspondenceDate ? { correspondenceDate: analysis.correspondenceDate } : {}),
+                }
+              : d
+          );
+          stateRef.current = { ...stateRef.current, documents: enriched };
+          setDocuments(enriched);
+          persist();
+        })
+        .catch((err) => console.warn("AI enrichment failed:", err))
+        .finally(() =>
+          setAnalyzingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(docId);
+            return next;
+          })
+        );
     },
-    []
+    [persist]
   );
 
   // --- Document mutations ---
@@ -43,11 +98,17 @@ export function useAppState() {
     async (sourcePath: string): Promise<Document> => {
       const doc = await cmds.importDocument(sourcePath);
       const newDocs = [...stateRef.current.documents, doc];
+      stateRef.current = { ...stateRef.current, documents: newDocs };
       setDocuments(newDocs);
-      await persist(newDocs, stateRef.current.binders, stateRef.current.customTags);
+      await persist();
+
+      if (stateRef.current.openAiApiKey && stateRef.current.aiEnabled) {
+        triggerAiEnrichment(doc.id, doc.filePath, doc.fileType, doc.content ?? "");
+      }
+
       return doc;
     },
-    [persist]
+    [persist, triggerAiEnrichment]
   );
 
   const deleteDoc = useCallback(
@@ -56,22 +117,21 @@ export function useAppState() {
       if (!doc) return;
       await cmds.deleteDocumentFiles(doc.filePath, doc.thumbnailPath);
       const newDocs = stateRef.current.documents.filter((d) => d.id !== docId);
+      stateRef.current = { ...stateRef.current, documents: newDocs };
       setDocuments(newDocs);
-      await persist(newDocs, stateRef.current.binders, stateRef.current.customTags);
+      await persist();
     },
     [persist]
   );
 
   const updateDoc = useCallback(
-    async (
-      docId: string,
-      updates: Partial<Pick<Document, "title" | "tags">>
-    ) => {
+    async (docId: string, updates: Partial<Pick<Document, "title" | "tags" | "correspondenceDate">>) => {
       const newDocs = stateRef.current.documents.map((d) =>
         d.id === docId ? { ...d, ...updates } : d
       );
+      stateRef.current = { ...stateRef.current, documents: newDocs };
       setDocuments(newDocs);
-      await persist(newDocs, stateRef.current.binders, stateRef.current.customTags);
+      await persist();
     },
     [persist]
   );
@@ -85,8 +145,9 @@ export function useAppState() {
   const addBinder = useCallback(
     async (binder: Binder) => {
       const newBinders = [...stateRef.current.binders, binder];
+      stateRef.current = { ...stateRef.current, binders: newBinders };
       setBinders(newBinders);
-      await persist(stateRef.current.documents, newBinders, stateRef.current.customTags);
+      await persist();
     },
     [persist]
   );
@@ -96,19 +157,19 @@ export function useAppState() {
       const newBinders = stateRef.current.binders.map((b) =>
         b.id === binderId ? { ...b, ...updates } : b
       );
+      stateRef.current = { ...stateRef.current, binders: newBinders };
       setBinders(newBinders);
-      await persist(stateRef.current.documents, newBinders, stateRef.current.customTags);
+      await persist();
     },
     [persist]
   );
 
   const deleteBinder = useCallback(
     async (binderId: string) => {
-      const newBinders = stateRef.current.binders.filter(
-        (b) => b.id !== binderId
-      );
+      const newBinders = stateRef.current.binders.filter((b) => b.id !== binderId);
+      stateRef.current = { ...stateRef.current, binders: newBinders };
       setBinders(newBinders);
-      await persist(stateRef.current.documents, newBinders, stateRef.current.customTags);
+      await persist();
     },
     [persist]
   );
@@ -132,10 +193,16 @@ export function useAppState() {
         t === oldTag ? trimmed : t
       );
 
+      stateRef.current = {
+        ...stateRef.current,
+        documents: newDocs,
+        binders: newBinders,
+        customTags: newCustomTags,
+      };
       setDocuments(newDocs);
       setBinders(newBinders);
       setCustomTags(newCustomTags);
-      await persist(newDocs, newBinders, newCustomTags);
+      await persist();
     },
     [persist]
   );
@@ -152,10 +219,16 @@ export function useAppState() {
       }));
       const newCustomTags = stateRef.current.customTags.filter((t) => t !== tag);
 
+      stateRef.current = {
+        ...stateRef.current,
+        documents: newDocs,
+        binders: newBinders,
+        customTags: newCustomTags,
+      };
       setDocuments(newDocs);
       setBinders(newBinders);
       setCustomTags(newCustomTags);
-      await persist(newDocs, newBinders, newCustomTags);
+      await persist();
     },
     [persist]
   );
@@ -170,16 +243,49 @@ export function useAppState() {
       ];
       if (allExisting.includes(trimmed)) return;
       const newCustomTags = [...stateRef.current.customTags, trimmed];
+      stateRef.current = { ...stateRef.current, customTags: newCustomTags };
       setCustomTags(newCustomTags);
-      await persist(stateRef.current.documents, stateRef.current.binders, newCustomTags);
+      await persist();
     },
     [persist]
+  );
+
+  // --- AI settings ---
+
+  const updateApiKey = useCallback(
+    async (key: string) => {
+      stateRef.current = { ...stateRef.current, openAiApiKey: key };
+      setOpenAiApiKey(key);
+      await persist();
+    },
+    [persist]
+  );
+
+  const updateAiEnabled = useCallback(
+    async (enabled: boolean) => {
+      stateRef.current = { ...stateRef.current, aiEnabled: enabled };
+      setAiEnabled(enabled);
+      await persist();
+    },
+    [persist]
+  );
+
+  const reanalyzeDoc = useCallback(
+    (docId: string) => {
+      const doc = stateRef.current.documents.find((d) => d.id === docId);
+      if (!doc || !stateRef.current.openAiApiKey) return;
+      triggerAiEnrichment(doc.id, doc.filePath, doc.fileType, doc.content ?? "");
+    },
+    [triggerAiEnrichment]
   );
 
   return {
     documents,
     binders,
     customTags,
+    openAiApiKey,
+    aiEnabled,
+    analyzingIds,
     loading,
     error,
     importDoc,
@@ -192,5 +298,8 @@ export function useAppState() {
     renameTagEverywhere,
     removeTagEverywhere,
     addCustomTag,
+    updateApiKey,
+    updateAiEnabled,
+    reanalyzeDoc,
   };
 }

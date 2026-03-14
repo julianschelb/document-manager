@@ -7,7 +7,7 @@ use hex;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::models::{AppState, Document};
+use crate::models::{AiAnalysis, AppState, Document};
 use crate::storage::{get_app_dirs, load_state as do_load, save_state as do_save};
 use crate::thumbnail::generate_thumbnail;
 
@@ -58,6 +58,9 @@ pub async fn import_document(
     // Generate thumbnail
     let thumb_path = generate_thumbnail(&dest_path, &doc_id, &dirs.thumbs_dir);
 
+    // Extract text content synchronously (AI enrichment is triggered from the frontend)
+    let content = crate::ai::extract_text(dest_path.to_str().unwrap_or(""), &ext);
+
     // Build Document record
     let file_size_kb = (bytes.len() as u64) / 1024;
     let original_file_name = source
@@ -72,6 +75,16 @@ pub async fn import_document(
         .to_string();
     let date_added = Local::now().format("%Y-%m-%d").to_string();
 
+    // Use the source file's creation date as initial correspondence date; fall back to today
+    let correspondence_date = fs::metadata(source)
+        .ok()
+        .and_then(|m| m.created().ok())
+        .map(|t| {
+            let dt: chrono::DateTime<chrono::Utc> = t.into();
+            dt.format("%Y-%m-%d").to_string()
+        })
+        .unwrap_or_else(|| date_added.clone());
+
     Ok(Document {
         id: doc_id,
         title,
@@ -83,7 +96,40 @@ pub async fn import_document(
         file_path: dest_path.to_str().unwrap_or("").to_string(),
         original_file_name,
         file_hash: Some(hash),
+        content,
+        summary: String::new(),
+        correspondence_date,
     })
+}
+
+#[tauri::command]
+pub async fn analyze_document_with_ai(
+    app: tauri::AppHandle,
+    file_path: String,
+    file_type: String,
+    content: String,
+    existing_tags: Vec<String>,
+) -> Result<AiAnalysis, String> {
+    let state = do_load(&app)?;
+    if state.open_ai_api_key.is_empty() {
+        return Err("AI_NO_KEY".to_string());
+    }
+    // Re-extract content from the file; fall back to the caller-supplied content
+    // (e.g. freshly extracted on import) only when re-extraction returns nothing.
+    let fresh_content = crate::ai::extract_text(&file_path, &file_type);
+    let effective_content = if fresh_content.len() > content.len() {
+        fresh_content
+    } else {
+        content
+    };
+    crate::ai::analyze_document(
+        &effective_content,
+        &file_type,
+        &file_path,
+        &existing_tags,
+        &state.open_ai_api_key,
+    )
+    .await
 }
 
 #[tauri::command]

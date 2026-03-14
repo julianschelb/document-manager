@@ -19,6 +19,9 @@ function App() {
     documents,
     binders,
     customTags,
+    openAiApiKey,
+    aiEnabled,
+    analyzingIds,
     loading,
     importDoc,
     deleteDoc,
@@ -30,6 +33,9 @@ function App() {
     renameTagEverywhere,
     removeTagEverywhere,
     addCustomTag,
+    updateApiKey,
+    updateAiEnabled,
+    reanalyzeDoc,
   } = useAppState();
 
   const [selectedBinder, setSelectedBinder] = useState<Binder | null>(null);
@@ -76,6 +82,11 @@ function App() {
     return [...filteredDocuments].sort((a, b) => {
       let cmp = 0;
       switch (sortConfig.field) {
+        case "correspondenceDate":
+          cmp = (a.correspondenceDate || "0001-01-01").localeCompare(
+            b.correspondenceDate || "0001-01-01"
+          );
+          break;
         case "title":
           cmp = a.title.localeCompare(b.title);
           break;
@@ -224,6 +235,15 @@ function App() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [selectedDocument, selectedDocIds, confirmDelete, editingDoc, editingBinder, settingsOpen, openDoc]);
 
+  // Sync selectedDocument when the underlying document is updated (e.g. by AI enrichment)
+  useEffect(() => {
+    if (!selectedDocument) return;
+    const updated = documents.find((d) => d.id === selectedDocument.id);
+    if (updated && updated !== selectedDocument) {
+      setSelectedDocument(updated);
+    }
+  }, [documents]);
+
   async function handleConfirmDelete() {
     if (!confirmDelete) return;
     if (confirmDelete.id === "__bulk__") {
@@ -340,11 +360,13 @@ function App() {
                     document={doc}
                     isSelected={selectedDocument?.id === doc.id}
                     isMultiSelected={selectedDocIds.has(doc.id)}
+                    isAnalyzing={analyzingIds.has(doc.id)}
                     onSelect={() => handleDocumentSelect(doc)}
                     onMultiSelect={() => handleMultiSelect(doc.id)}
                     onTagClick={handleTagClick}
                     onOpen={() => openDoc(doc.filePath)}
                     onDelete={() => setConfirmDelete({ type: "document", id: doc.id, title: doc.title })}
+                    onReprocess={openAiApiKey ? () => reanalyzeDoc(doc.id) : undefined}
                   />
                 ))}
               </div>
@@ -382,6 +404,7 @@ function App() {
         {/* Right: Preview Pane */}
         <PreviewPane
           document={selectedDocument}
+          isAnalyzing={selectedDocument ? analyzingIds.has(selectedDocument.id) : false}
           onTagClick={handleTagClick}
           onUpdateTags={async (docId, tags) => {
             const target = documents.find((d) => d.id === docId);
@@ -401,6 +424,7 @@ function App() {
               title: doc.title,
             })
           }
+          onReprocess={selectedDocument && openAiApiKey ? () => reanalyzeDoc(selectedDocument.id) : undefined}
         />
       </div>
 
@@ -519,10 +543,14 @@ function App() {
         <SettingsModal
           documents={documents}
           customTags={customTags}
+          openAiApiKey={openAiApiKey}
+          aiEnabled={aiEnabled}
           onClose={() => setSettingsOpen(false)}
           onRenameTag={renameTagEverywhere}
           onRemoveTag={removeTagEverywhere}
           onAddTag={addCustomTag}
+          onUpdateApiKey={updateApiKey}
+          onUpdateAiEnabled={updateAiEnabled}
         />
       )}
     </div>

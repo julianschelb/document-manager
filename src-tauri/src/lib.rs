@@ -1,3 +1,4 @@
+mod ai;
 mod commands;
 mod models;
 mod storage;
@@ -14,6 +15,7 @@ pub fn run() {
             commands::import_document,
             commands::open_document,
             commands::delete_document_files,
+            commands::analyze_document_with_ai,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

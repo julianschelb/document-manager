@@ -6,7 +6,8 @@ interface SortControlsProps {
 }
 
 const SORT_OPTIONS: { value: SortField; label: string }[] = [
-  { value: "dateAdded", label: "Date Added" },
+  { value: "correspondenceDate", label: "Date" },
+  { value: "dateAdded", label: "Added" },
   { value: "title", label: "Name" },
   { value: "fileSizeKb", label: "Size" },
   { value: "fileType", label: "Type" },

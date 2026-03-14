@@ -18,31 +18,44 @@ const PDF_TYPE = "pdf";
 const DEFAULT_WIDTH = 461; // 384 * 1.2
 const MIN_WIDTH = 260;
 const MAX_WIDTH = 680;
+const DEFAULT_PREVIEW_H = 200;
+const MIN_PREVIEW_H = 80;
+const MAX_PREVIEW_H = 440;
 
 interface PreviewPaneProps {
   document: Document | null;
+  isAnalyzing?: boolean;
   onTagClick: (tag: string) => void;
   onUpdateTags: (docId: string, tags: string[]) => void;
   onClose: () => void;
   onOpen: (doc: Document) => void;
   onEdit: (doc: Document) => void;
   onDelete: (doc: Document) => void;
+  onReprocess?: () => void;
 }
 
 export function PreviewPane({
   document: doc,
+  isAnalyzing,
   onTagClick,
   onUpdateTags,
   onClose,
   onOpen,
   onEdit,
   onDelete,
+  onReprocess,
 }: PreviewPaneProps) {
   // --- Resize state ---
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const isResizing = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
+
+  // --- Preview height resize state ---
+  const [previewHeight, setPreviewHeight] = useState(DEFAULT_PREVIEW_H);
+  const isPreviewResizing = useRef(false);
+  const previewStartY = useRef(0);
+  const previewStartH = useRef(0);
 
   // --- Tag editing state ---
   const [editingTagIdx, setEditingTagIdx] = useState<number | null>(null);
@@ -52,11 +65,18 @@ export function PreviewPane({
   const editTagInputRef = useRef<HTMLInputElement>(null);
   const addTagInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset tag editing when switching documents
+  // --- Drag overlay (prevents iframe/img from stealing events during resize) ---
+  const [isDragging, setIsDragging] = useState(false);
+
+  // --- Content expand state ---
+  const [contentExpanded, setContentExpanded] = useState(false);
+
+  // Reset tag editing + content expand when switching documents
   useEffect(() => {
     setEditingTagIdx(null);
     setEditingTagValue("");
     setAddingTag(false);
+    setContentExpanded(false);
     setNewTagValue("");
   }, [doc?.id]);
 
@@ -70,18 +90,25 @@ export function PreviewPane({
     if (addingTag) addTagInputRef.current?.focus();
   }, [addingTag]);
 
-  // --- Resize handlers ---
+  // --- Resize handlers (horizontal pane width + vertical preview height) ---
   useEffect(() => {
     function handleMouseMove(e: MouseEvent) {
-      if (!isResizing.current) return;
-      const delta = startX.current - e.clientX;
-      setWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth.current + delta)));
+      if (isResizing.current) {
+        const delta = startX.current - e.clientX;
+        setWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth.current + delta)));
+      }
+      if (isPreviewResizing.current) {
+        const delta = e.clientY - previewStartY.current;
+        setPreviewHeight(Math.max(MIN_PREVIEW_H, Math.min(MAX_PREVIEW_H, previewStartH.current + delta)));
+      }
     }
     function handleMouseUp() {
-      if (isResizing.current) {
+      if (isResizing.current || isPreviewResizing.current) {
         isResizing.current = false;
+        isPreviewResizing.current = false;
         window.document.body.style.cursor = "";
         window.document.body.style.userSelect = "";
+        setIsDragging(false);
       }
     }
     window.addEventListener("mousemove", handleMouseMove);
@@ -98,6 +125,17 @@ export function PreviewPane({
     startWidth.current = width;
     window.document.body.style.cursor = "col-resize";
     window.document.body.style.userSelect = "none";
+    setIsDragging(true);
+    e.preventDefault();
+  }
+
+  function handlePreviewResizeStart(e: React.MouseEvent) {
+    isPreviewResizing.current = true;
+    previewStartY.current = e.clientY;
+    previewStartH.current = previewHeight;
+    window.document.body.style.cursor = "row-resize";
+    window.document.body.style.userSelect = "none";
+    setIsDragging(true);
     e.preventDefault();
   }
 
@@ -191,7 +229,7 @@ export function PreviewPane({
       </div>
 
       {/* Preview area */}
-      <div className="shrink-0 bg-gray-100 dark:bg-gray-700" style={{ height: 440 }}>
+      <div className="shrink-0 bg-gray-100 dark:bg-gray-700 relative" style={{ height: previewHeight }}>
         {hasPreview ? (
           isPdf ? (
             <iframe
@@ -222,6 +260,15 @@ export function PreviewPane({
             </span>
           </div>
         )}
+        {/* Transparent overlay blocks iframe/img from stealing pointer events during drag */}
+        {isDragging && <div className="absolute inset-0 z-20" />}
+        {/* Drag handle to resize preview height */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-row-resize group z-10"
+          onMouseDown={handlePreviewResizeStart}
+        >
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200 dark:bg-gray-600 group-hover:bg-indigo-400/60 transition-colors" />
+        </div>
       </div>
 
       {/* Content */}
@@ -241,7 +288,22 @@ export function PreviewPane({
 
         {/* Meta */}
         <div className="flex flex-col gap-1 text-xs text-gray-400">
-          <span>{formattedDate}</span>
+          {doc.correspondenceDate && (
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-medium text-gray-500 dark:text-gray-400 w-12 shrink-0">Dated</span>
+              <span>
+                {new Date(doc.correspondenceDate + "T12:00:00").toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+          )}
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-medium text-gray-500 dark:text-gray-400 w-12 shrink-0">Added</span>
+            <span>{formattedDate}</span>
+          </div>
           <span>{formattedSize}</span>
           {doc.originalFileName && doc.originalFileName !== doc.title && (
             <span className="truncate text-gray-300 dark:text-gray-600" title={doc.originalFileName}>
@@ -340,6 +402,43 @@ export function PreviewPane({
             )}
           </div>
         </div>
+
+        {/* Summary / AI status */}
+        {(isAnalyzing || doc.summary) && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              Summary
+            </span>
+            {isAnalyzing ? (
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <svg className="w-3 h-3 animate-spin text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                AI is analyzing…
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 dark:text-gray-400 italic leading-relaxed">{doc.summary}</p>
+            )}
+          </div>
+        )}
+
+        {/* Content (collapsible) */}
+        {doc.content && (
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={() => setContentExpanded((v) => !v)}
+              className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              Content {contentExpanded ? "▾" : "▸"}
+            </button>
+            {contentExpanded && (
+              <pre className="text-xs text-gray-600 dark:text-gray-300 font-mono whitespace-pre-wrap break-words max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg p-2 leading-relaxed">
+                {doc.content}
+              </pre>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -351,6 +450,25 @@ export function PreviewPane({
         >
           Open Document
         </button>
+        {onReprocess && (
+          <button
+            onClick={onReprocess}
+            disabled={isAnalyzing}
+            className="w-full px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 disabled:opacity-40 disabled:cursor-not-allowed text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            {isAnalyzing ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-spin text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Analyzing…
+              </>
+            ) : (
+              "Reprocess Document"
+            )}
+          </button>
+        )}
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(doc)}

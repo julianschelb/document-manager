@@ -13,6 +13,12 @@ pub struct Document {
     pub file_path: String,
     pub original_file_name: String,
     pub file_hash: Option<String>,
+    #[serde(default)]
+    pub content: String,
+    #[serde(default)]
+    pub summary: String,
+    #[serde(default)]
+    pub correspondence_date: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -24,11 +30,40 @@ pub struct Binder {
     pub filter_tags: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct AppState {
     pub documents: Vec<Document>,
     pub binders: Vec<Binder>,
     #[serde(default)]
     pub custom_tags: Vec<String>,
+    #[serde(default)]
+    pub open_ai_api_key: String,
+    #[serde(default = "default_true")]
+    pub ai_enabled: bool,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            documents: Vec::new(),
+            binders: Vec::new(),
+            custom_tags: Vec::new(),
+            open_ai_api_key: String::new(),
+            ai_enabled: true,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AiAnalysis {
+    pub title: String,
+    pub tags: Vec<String>,
+    pub summary: String,
+    pub correspondence_date: Option<String>,
 }

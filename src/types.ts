@@ -9,6 +9,9 @@ export interface Document {
   filePath: string;
   originalFileName: string;
   fileHash?: string;
+  content?: string;
+  summary?: string;
+  correspondenceDate?: string;
 }
 
 export interface Binder {
@@ -22,9 +25,11 @@ export interface AppState {
   documents: Document[];
   binders: Binder[];
   customTags: string[];
+  openAiApiKey: string;
+  aiEnabled: boolean;
 }
 
-export type SortField = "dateAdded" | "title" | "fileSizeKb" | "fileType";
+export type SortField = "dateAdded" | "title" | "fileSizeKb" | "fileType" | "correspondenceDate";
 export type SortDirection = "asc" | "desc";
 
 export interface SortConfig {

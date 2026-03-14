@@ -5,25 +5,37 @@ import { getTagColor } from "../utils/tagColors";
 interface SettingsModalProps {
   documents: Document[];
   customTags: string[];
+  openAiApiKey: string;
+  aiEnabled: boolean;
   onClose: () => void;
   onRenameTag: (oldTag: string, newTag: string) => Promise<void>;
   onRemoveTag: (tag: string) => Promise<void>;
   onAddTag: (tag: string) => Promise<void>;
+  onUpdateApiKey: (key: string) => Promise<void>;
+  onUpdateAiEnabled: (enabled: boolean) => Promise<void>;
 }
 
 export function SettingsModal({
   documents,
   customTags,
+  openAiApiKey,
+  aiEnabled,
   onClose,
   onRenameTag,
   onRemoveTag,
   onAddTag,
+  onUpdateApiKey,
+  onUpdateAiEnabled,
 }: SettingsModalProps) {
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const [newTagValue, setNewTagValue] = useState("");
   const editInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
+
+  const [apiKeyValue, setApiKeyValue] = useState(openAiApiKey);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKeySaved, setApiKeySaved] = useState(false);
 
   // Compute sorted union of all tags + usage counts
   const { allTags, tagCounts } = useMemo(() => {
@@ -216,6 +228,83 @@ export function SettingsModal({
             >
               Add
             </button>
+          </div>
+
+          {/* AI section */}
+          <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                AI
+              </h3>
+              {openAiApiKey ? (
+                <span className="flex items-center gap-1 text-xs text-green-500">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                  API key configured
+                </span>
+              ) : (
+                <span className="text-xs text-gray-400 dark:text-gray-500">Not configured</span>
+              )}
+            </div>
+
+            {/* Enable/disable toggle */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-gray-700 dark:text-gray-300">Enable AI on import</span>
+              <button
+                onClick={() => onUpdateAiEnabled(!aiEnabled)}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
+                  aiEnabled ? "bg-indigo-500" : "bg-gray-300 dark:bg-gray-600"
+                }`}
+                title={aiEnabled ? "Click to disable" : "Click to enable"}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                    aiEnabled ? "translate-x-[19px]" : "translate-x-[3px]"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* API key input */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showApiKey ? "text" : "password"}
+                  value={apiKeyValue}
+                  onChange={(e) => { setApiKeyValue(e.target.value); setApiKeySaved(false); }}
+                  placeholder="sk-..."
+                  className="w-full text-sm px-3 py-2 pr-10 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400 dark:focus:border-indigo-500 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey((v) => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  title={showApiKey ? "Hide" : "Show"}
+                >
+                  {showApiKey ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <button
+                onClick={async () => {
+                  await onUpdateApiKey(apiKeyValue.trim());
+                  setApiKeySaved(true);
+                }}
+                className="shrink-0 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {apiKeySaved ? "Saved!" : "Save"}
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] text-gray-400 dark:text-gray-500">
+              Used for AI-powered title, tag, and summary generation on import. Stored locally.
+            </p>
           </div>
         </div>
       </div>

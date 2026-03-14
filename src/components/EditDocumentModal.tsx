@@ -4,7 +4,7 @@ import { getTagColor } from "../utils/tagColors";
 
 interface EditDocumentModalProps {
   document: Document;
-  onSave: (id: string, updates: { title: string; tags: string[] }) => void;
+  onSave: (id: string, updates: { title: string; tags: string[]; correspondenceDate: string }) => void;
   onClose: () => void;
 }
 
@@ -15,6 +15,7 @@ export function EditDocumentModal({
 }: EditDocumentModalProps) {
   const [title, setTitle] = useState(doc.title);
   const [tags, setTags] = useState<string[]>([...doc.tags]);
+  const [correspondenceDate, setCorrespondenceDate] = useState(doc.correspondenceDate ?? "");
   const [tagInput, setTagInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +42,7 @@ export function EditDocumentModal({
 
   function handleSave() {
     if (title.trim()) {
-      onSave(doc.id, { title: title.trim(), tags });
+      onSave(doc.id, { title: title.trim(), tags, correspondenceDate });
     }
   }
 
@@ -72,6 +73,18 @@ export function EditDocumentModal({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
+            className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+            Correspondence Date
+          </label>
+          <input
+            type="date"
+            value={correspondenceDate}
+            onChange={(e) => setCorrespondenceDate(e.target.value)}
             className="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
